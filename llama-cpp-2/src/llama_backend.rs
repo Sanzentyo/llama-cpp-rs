@@ -96,6 +96,8 @@ impl LlamaBackend {
 
         unsafe {
             llama_cpp_sys_2::llama_log_set(Some(void_log), std::ptr::null_mut());
+            // Ensure GGML logs are silenced too (some MTMD paths log via ggml)
+            llama_cpp_sys_2::ggml_log_set(Some(void_log), std::ptr::null_mut());
         }
     }
 }

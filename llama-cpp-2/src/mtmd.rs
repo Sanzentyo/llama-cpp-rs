@@ -63,6 +63,7 @@ impl From<llama_cpp_sys_2::mtmd_input_chunk_type> for MtmdInputChunkType {
 ///     print_timings: true,
 ///     n_threads: 4,
 ///     media_marker: CString::new(mtmd_default_marker()).unwrap(),
+///     verbosity: llama_cpp_sys_2::ggml_log_level::GGML_LOG_LEVEL_ERROR,
 /// };
 /// ```
 #[derive(Debug, Clone)]
@@ -75,6 +76,8 @@ pub struct MtmdContextParams {
     pub n_threads: i32,
     /// Media marker string used to identify media positions in text
     pub media_marker: CString,
+    /// Verbosity threshold for MTMD/CLIP logs
+    pub verbosity: llama_cpp_sys_2::ggml_log_level,
 }
 
 impl Default for MtmdContextParams {
@@ -91,12 +94,14 @@ impl From<&MtmdContextParams> for llama_cpp_sys_2::mtmd_context_params {
             print_timings,
             n_threads,
             media_marker,
+            verbosity,
         } = params;
 
         context.use_gpu = *use_gpu;
         context.print_timings = *print_timings;
         context.n_threads = *n_threads;
         context.media_marker = media_marker.as_ptr();
+        context.verbosity = *verbosity;
 
         context
     }
@@ -109,7 +114,21 @@ impl From<llama_cpp_sys_2::mtmd_context_params> for MtmdContextParams {
             print_timings: params.print_timings,
             n_threads: params.n_threads,
             media_marker: unsafe { CStr::from_ptr(params.media_marker) }.to_owned(),
+            verbosity: params.verbosity,
         }
+    }
+}
+
+impl MtmdContextParams {
+    /// Convenience: reduce MTMD/CLIP logs to errors only.
+    pub fn quiet(mut self) -> Self {
+        self.verbosity = llama_cpp_sys_2::GGML_LOG_LEVEL_ERROR;
+        self
+    }
+    /// Convenience: enable informational MTMD/CLIP logs.
+    pub fn info(mut self) -> Self {
+        self.verbosity = llama_cpp_sys_2::GGML_LOG_LEVEL_INFO;
+        self
     }
 }
 

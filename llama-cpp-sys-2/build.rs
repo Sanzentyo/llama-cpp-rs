@@ -641,6 +641,9 @@ fn main() {
         .always_configure(false);
 
     let build_dir = config.build();
+    // cmake-rs returns the install directory (OUT_DIR). The actual CMake
+    // build directory is at OUT_DIR/build.
+    let cmake_build_dir = build_dir.join("build");
 
     // Search paths
     println!("cargo:rustc-link-search={}", out_dir.join("lib").display());
@@ -649,6 +652,36 @@ fn main() {
         out_dir.join("lib64").display()
     );
     println!("cargo:rustc-link-search={}", build_dir.display());
+
+    // On Windows/MSVC, static libraries do not pull transitive deps automatically.
+    // mtmd depends on the llama.cpp "common" library, which CMake places under
+    // <build_dir>/common/<Profile>/common.lib. Ensure we link it explicitly.
+    if cfg!(all(feature = "mtmd", target_os = "windows")) {
+        let candidate_profiles = [
+            profile.as_str(),
+            "RelWithDebInfo",
+            "MinSizeRel",
+            "Release",
+            "Debug",
+        ];
+        let mut linked = false;
+        for p in candidate_profiles.iter() {
+            let dir = cmake_build_dir.join("common").join(p);
+            let lib = dir.join("common.lib");
+            if lib.exists() {
+                println!("cargo:rustc-link-search=native={}", dir.display());
+                println!("cargo:rustc-link-lib=static=common");
+                linked = true;
+                break;
+            }
+        }
+        if !linked {
+            println!(
+                "cargo:warning=llama-cpp-sys-2: common.lib not found under {}",
+                cmake_build_dir.join("common").display()
+            );
+        }
+    }
 
     if cfg!(feature = "cuda") && !build_shared_libs {
         // Re-run build script if CUDA_PATH environment variable changes
