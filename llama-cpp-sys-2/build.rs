@@ -776,9 +776,6 @@ fn main() {
         .always_configure(false);
 
     let build_dir = config.build();
-    // cmake-rs returns the install directory (OUT_DIR). The actual CMake
-    // build directory is at OUT_DIR/build.
-    let cmake_build_dir = build_dir.join("build");
 
     // Search paths
     println!("cargo:rustc-link-search={}", out_dir.join("lib").display());
