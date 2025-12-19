@@ -534,5 +534,9 @@ pub fn send_logs_to_tracing(options: LogOptions) {
         // GGML has to be set after llama since setting llama sets ggml as well.
         llama_cpp_sys_2::llama_log_set(Some(logs_to_trace), llama_heap_state as *mut _);
         llama_cpp_sys_2::ggml_log_set(Some(logs_to_trace), ggml_heap_state as *mut _);
+
+        // MTMD tooling uses its own logging callback (and mtmd-helper has its own logger wrapper),
+        // so it needs to be wired separately.
+        llama_cpp_sys_2::mtmd_helper_log_set(Some(logs_to_trace), llama_heap_state as *mut _);
     }
 }

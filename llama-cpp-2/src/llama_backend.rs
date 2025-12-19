@@ -98,6 +98,10 @@ impl LlamaBackend {
             llama_cpp_sys_2::llama_log_set(Some(void_log), std::ptr::null_mut());
             // Ensure GGML logs are silenced too (some MTMD paths log via ggml)
             llama_cpp_sys_2::ggml_log_set(Some(void_log), std::ptr::null_mut());
+
+            // MTMD tooling (mtmd + mtmd-helper) maintains its own log callback, so it must be
+            // explicitly silenced as well.
+            llama_cpp_sys_2::mtmd_helper_log_set(Some(void_log), std::ptr::null_mut());
         }
     }
 }
